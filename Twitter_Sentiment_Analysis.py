@@ -1,7 +1,20 @@
 from textblob import TextBlob
 import tweepy
 import matplotlib.pyplot as plt
+import pprint
+from pymongo import MongoClient
+import json
 
+#connect to mongo client
+client = MongoClient()
+print(client)
+
+#creates a new database or uses existing one
+db = client.tweetsdb
+#db = client["tweetsdb"]
+print(db)
+tweetsdb = db.tweets
+print(tweetsdb)
 
 def calculatePercentage(numerator, denominator):
 	return 100 * float(numerator) / float(denominator)
@@ -20,7 +33,14 @@ api = tweepy.API(auth)
 searchTerm = input("Enter the keyword you want to search from Twitter: ")
 noOfTerms = int(input("How many tweets do you want to analyze? "))
 
+
+#Add tweets to MongoDb
+alltweets = []
 tweets = tweepy.Cursor(api.search, q=searchTerm, lang='en').items(noOfTerms)
+
+alltweets.extend(tweets)
+for tweet in alltweets:
+    tweetsdb.insert_one(tweet._json)
 
 positive = 0
 negative = 0
@@ -63,13 +83,4 @@ plt.legend(patches, labels, loc='best')
 plt.title("How people are reacting on " + searchTerm + " by analyzing " + str(noOfTerms) + " Tweets!")
 plt.show()
 
-import json
-
-# your mongo stuff goes here
-
-file_content = []
-with open("mactext.txt") as f:
-    for line in f:
-        text = f.read() 
-
-collection.insert(json.dumps(file_content))
+client.close()
